@@ -1,0 +1,86 @@
+name: Update data
+
+# Once a day: fetch new sandwiches from stulle.app, recheck recent ones for deletion or
+# moderation, embed new photos with CLIP, redo the map, and commit dataset/ if it changed.
+# Only the newest partitions change, so each commit adds a few MB at most.
+
+on:
+  schedule:
+    - cron: "17 4 * * *" # 04:17 UTC daily
+  workflow_dispatch:
+    inputs:
+      refresh_preview:
+        description: "Also re-run the notebook for molab's static preview"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            pipeline.py
+            stullen.py
+
+      - name: Cache CLIP model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-clip-ViT-L-14-v1
+
+      - name: Restore pipeline state from dataset/
+        run: uv run pipeline.py restore
+
+      - name: Fetch, recheck, embed, map
+        run: uv run pipeline.py run
+
+      - name: Publish dataset/
+        run: uv run pipeline.py publish
+
+      # molab shows the notebook's committed outputs (__marimo__/session/) as a static
+      # preview. It's ~3.5 MB, so refresh it weekly (Mondays) or on request, not daily.
+      - name: Refresh notebook preview
+        run: |
+          if [ "${{ inputs.refresh_preview }}" = "true" ] || [ "$(date -u +%u)" = "1" ]; then
+            uvx marimo export session --sandbox stullen.py --force-overwrite
+          fi
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dataset __marimo__/session
+          if git diff --cached --quiet; then
+            echo "No changes."
+            exit 0
+          fi
+          n=$(jq .sandwiches dataset/meta.json)
+          git commit -m "data: ${n} sandwiches ($(date -u +%Y-%m-%d))"
+          for i in 1 2 3; do
+            git pull --rebase --autostash && git push && exit 0
+            sleep 10
+          done
+          exit 1
+
+      - name: Upload pipeline log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-state
+          path: |
+            data/*.txt
+            data/*.log
+          if-no-files-found: ignore

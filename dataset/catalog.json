@@ -1,0 +1,507 @@
+{
+ "toppings": {
+  "kaese": {
+   "de": "Käse",
+   "en": "cheese",
+   "kind": "savory"
+  },
+  "salami": {
+   "de": "Salami",
+   "en": "salami",
+   "kind": "savory"
+  },
+  "schinken": {
+   "de": "Schinken",
+   "en": "ham",
+   "kind": "savory"
+  },
+  "gurke": {
+   "de": "Gurke",
+   "en": "cucumber",
+   "kind": "veg"
+  },
+  "tomate": {
+   "de": "Tomate",
+   "en": "tomato",
+   "kind": "veg"
+  },
+  "ei": {
+   "de": "Ei",
+   "en": "egg",
+   "kind": "savory"
+  },
+  "radieschen": {
+   "de": "Radieschen",
+   "en": "radish",
+   "kind": "veg"
+  },
+  "gewuerzgurke": {
+   "de": "Gewürzgurke",
+   "en": "pickle",
+   "kind": "veg"
+  },
+  "leberkaese": {
+   "de": "Leberkäse",
+   "en": "Bavarian meatloaf",
+   "kind": "savory"
+  },
+  "harzer": {
+   "de": "Harzer",
+   "en": "Harz sour-milk cheese",
+   "kind": "savory"
+  },
+  "blutwurst": {
+   "de": "Blutwurst",
+   "en": "blood sausage",
+   "kind": "savory"
+  },
+  "spiegelei": {
+   "de": "Spiegelei",
+   "en": "fried egg",
+   "kind": "savory"
+  },
+  "rotebete": {
+   "de": "Rote Bete",
+   "en": "beetroot",
+   "kind": "veg"
+  },
+  "senfgurke": {
+   "de": "Senfgurke",
+   "en": "mustard pickle",
+   "kind": "veg"
+  },
+  "lachs": {
+   "de": "Lachs",
+   "en": "salmon",
+   "kind": "savory"
+  },
+  "bismarckhering": {
+   "de": "Bismarckhering",
+   "en": "pickled herring",
+   "kind": "savory"
+  },
+  "schnittlauch": {
+   "de": "Schnittlauch",
+   "en": "chives",
+   "kind": "veg"
+  },
+  "banane": {
+   "de": "Banane",
+   "en": "banana",
+   "kind": "sweet"
+  },
+  "erdbeere": {
+   "de": "Erdbeere",
+   "en": "strawberry",
+   "kind": "sweet"
+  },
+  "kiwi": {
+   "de": "Kiwi",
+   "en": "kiwi",
+   "kind": "sweet"
+  },
+  "fischstaebchen": {
+   "de": "Fischstäbchen",
+   "en": "fish sticks",
+   "kind": "junk"
+  },
+  "pommes": {
+   "de": "Pommes",
+   "en": "fries",
+   "kind": "junk"
+  },
+  "chips": {
+   "de": "Chips",
+   "en": "crisps",
+   "kind": "junk"
+  },
+  "marshmallow": {
+   "de": "Marshmallow",
+   "en": "marshmallow",
+   "kind": "sweet"
+  },
+  "schokolinse": {
+   "de": "Schokolinse",
+   "en": "chocolate drops",
+   "kind": "sweet"
+  },
+  "gummibaer": {
+   "de": "Gummibär",
+   "en": "gummy bear",
+   "kind": "sweet"
+  }
+ },
+ "spreads": {
+  "butter": {
+   "de": "Butter",
+   "en": "butter",
+   "kind": "spread"
+  },
+  "quark": {
+   "de": "Quark",
+   "en": "quark",
+   "kind": "spread"
+  },
+  "leberwurst": {
+   "de": "Leberwurst",
+   "en": "liver sausage",
+   "kind": "spread"
+  },
+  "jam": {
+   "de": "Marmelade",
+   "en": "jam",
+   "kind": "spread"
+  },
+  "nutella": {
+   "de": "Nutella",
+   "en": "Nutella",
+   "kind": "spread"
+  }
+ },
+ "breads": {
+  "roggenmisch": {
+   "de": "Roggenmisch",
+   "en": "rye-wheat"
+  },
+  "graubrot": {
+   "de": "Graubrot",
+   "en": "light rye"
+  },
+  "vollkorn": {
+   "de": "Vollkorn",
+   "en": "wholegrain"
+  },
+  "toast": {
+   "de": "Toast",
+   "en": "toast"
+  }
+ },
+ "kinds": {
+  "spread": {
+   "de": "Aufstrich",
+   "en": "spreads"
+  },
+  "savory": {
+   "de": "Wurst, Käse, Ei, Fisch",
+   "en": "meat, cheese, egg, fish"
+  },
+  "veg": {
+   "de": "Gemüse",
+   "en": "vegetables"
+  },
+  "junk": {
+   "de": "Pommes, Chips, Fischstäbchen",
+   "en": "fries, crisps, fish sticks"
+  },
+  "sweet": {
+   "de": "Süßes & Obst",
+   "en": "sweets & fruit"
+  }
+ },
+ "classics": {
+  "Butterbrot": {
+   "de": "Butterbrot",
+   "en": "bread & butter",
+   "need": [],
+   "allow": [],
+   "spreads": [
+    "butter"
+   ],
+   "only_spreads": [
+    "butter"
+   ]
+  },
+  "Käsebrot": {
+   "de": "Käsebrot",
+   "en": "cheese sandwich",
+   "need": [
+    "kaese"
+   ],
+   "allow": [
+    "gurke",
+    "radieschen",
+    "schnittlauch",
+    "tomate"
+   ],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Schinkenbrot": {
+   "de": "Schinkenbrot",
+   "en": "ham sandwich",
+   "need": [
+    "schinken"
+   ],
+   "allow": [
+    "gewuerzgurke",
+    "gurke",
+    "tomate"
+   ],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Salamibrot": {
+   "de": "Salamibrot",
+   "en": "salami sandwich",
+   "need": [
+    "salami"
+   ],
+   "allow": [
+    "gewuerzgurke",
+    "gurke"
+   ],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Strammer Max": {
+   "de": "Strammer Max",
+   "en": "ham & fried egg",
+   "need": [
+    "schinken",
+    "spiegelei"
+   ],
+   "allow": [
+    "gewuerzgurke",
+    "gurke",
+    "schnittlauch",
+    "tomate"
+   ],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Leberwurst + Gewürzgurke": {
+   "de": "Leberwurst + Gewürzgurke",
+   "en": "liver sausage & pickle",
+   "need": [
+    "gewuerzgurke"
+   ],
+   "allow": [
+    "gurke",
+    "radieschen",
+    "senfgurke"
+   ],
+   "spreads": [
+    "leberwurst"
+   ],
+   "only_spreads": null
+  },
+  "Quark + Radieschen": {
+   "de": "Quark + Radieschen",
+   "en": "quark & radish",
+   "need": [
+    "radieschen"
+   ],
+   "allow": [
+    "gurke",
+    "schnittlauch",
+    "tomate"
+   ],
+   "spreads": [
+    "quark"
+   ],
+   "only_spreads": null
+  },
+  "Eierbrot": {
+   "de": "Eierbrot",
+   "en": "egg sandwich",
+   "need": [
+    "ei"
+   ],
+   "allow": [
+    "gurke",
+    "radieschen",
+    "schnittlauch",
+    "tomate"
+   ],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Tomatenbrot": {
+   "de": "Tomatenbrot",
+   "en": "tomato sandwich",
+   "need": [
+    "tomate"
+   ],
+   "allow": [
+    "schnittlauch"
+   ],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Lachsbrot": {
+   "de": "Lachsbrot",
+   "en": "salmon sandwich",
+   "need": [
+    "lachs"
+   ],
+   "allow": [
+    "ei",
+    "gurke",
+    "radieschen",
+    "schnittlauch"
+   ],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Fischbrot (Bismarck)": {
+   "de": "Fischbrot (Bismarck)",
+   "en": "herring sandwich",
+   "need": [
+    "bismarckhering"
+   ],
+   "allow": [
+    "gewuerzgurke",
+    "gurke"
+   ],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Harzer-Brot": {
+   "de": "Harzer-Brot",
+   "en": "Harz cheese sandwich",
+   "need": [
+    "harzer"
+   ],
+   "allow": [
+    "radieschen",
+    "schnittlauch"
+   ],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Leberkäsebrot": {
+   "de": "Leberkäsebrot",
+   "en": "meatloaf sandwich",
+   "need": [
+    "leberkaese"
+   ],
+   "allow": [
+    "gewuerzgurke",
+    "gurke",
+    "spiegelei"
+   ],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Blutwurstbrot": {
+   "de": "Blutwurstbrot",
+   "en": "blood sausage sandwich",
+   "need": [
+    "blutwurst"
+   ],
+   "allow": [
+    "gewuerzgurke",
+    "gurke"
+   ],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Nutellabrot": {
+   "de": "Nutellabrot",
+   "en": "Nutella sandwich",
+   "need": [],
+   "allow": [
+    "banane"
+   ],
+   "spreads": [
+    "nutella"
+   ],
+   "only_spreads": [
+    "butter",
+    "nutella"
+   ]
+  },
+  "Marmeladenbrot": {
+   "de": "Marmeladenbrot",
+   "en": "jam sandwich",
+   "need": [],
+   "allow": [],
+   "spreads": [
+    "jam"
+   ],
+   "only_spreads": [
+    "butter",
+    "jam"
+   ]
+  },
+  "Erdbeerbrot": {
+   "de": "Erdbeerbrot",
+   "en": "strawberry sandwich",
+   "need": [
+    "erdbeere"
+   ],
+   "allow": [
+    "banane"
+   ],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Bananenbrot": {
+   "de": "Bananenbrot",
+   "en": "banana sandwich (not the cake)",
+   "need": [
+    "banane"
+   ],
+   "allow": [],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Fischstäbchenbrot": {
+   "de": "Fischstäbchenbrot",
+   "en": "fish stick sandwich",
+   "need": [
+    "fischstaebchen"
+   ],
+   "allow": [
+    "gurke",
+    "tomate"
+   ],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Pommes-Stulle": {
+   "de": "Pommes-Stulle",
+   "en": "chip butty",
+   "need": [
+    "pommes"
+   ],
+   "allow": [],
+   "spreads": null,
+   "only_spreads": null
+  },
+  "Chips-Stulle": {
+   "de": "Chips-Stulle",
+   "en": "crisp sandwich",
+   "need": [
+    "chips"
+   ],
+   "allow": [],
+   "spreads": null,
+   "only_spreads": null
+  }
+ },
+ "taxonomy": [
+  "Normal Stulle",
+  "Just a spread",
+  "Bare bread",
+  "Tower",
+  "Chaos heap",
+  "Drawing / symbol",
+  "Words",
+  "Face",
+  "Flag",
+  "Rude"
+ ],
+ "hunts": [
+  "☭ Hammer and sickle",
+  "✍️ Words and slogans",
+  "🍆 Rude shapes",
+  "🏳️ Flags",
+  "🙂 Faces",
+  "❤️ Hearts",
+  "🐱 Animals",
+  "🗼 Towers",
+  "🌀 Pure chaos",
+  "🍞 Perfectly normal Stulle"
+ ]
+}

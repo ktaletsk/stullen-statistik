@@ -1,0 +1,21 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Local pipeline state (thumbnails, raw jsonl, logs, caches). The shareable copy is dataset/,
+# and `uv run pipeline.py restore` rebuilds data/ from it.
+data/
+
+# marimo: keep the session file (molab's static preview), not the caches
+__marimo__/*
+!__marimo__/session/
+
+# only the main notebook needs a committed session (molab preview)
+blog/__marimo__/

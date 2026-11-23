@@ -1,0 +1,26 @@
+[project]
+name = "stullen-statistik"
+version = "0.1.0"
+description = "A serious data analysis of stulle.app, a very unserious German sandwich simulator"
+requires-python = ">=3.13"
+dependencies = [
+    "altair>=6.3.0",
+    "httpx>=0.28.1",
+    "ipython>=9.18.1",
+    "marimo>=0.25.2",
+    "numpy>=2.5.5",
+    "pillow>=13.0.0",
+    "polars>=2.1.0",
+    "pyarrow>=26.0.1",
+    "scipy>=1.18.1",
+    "sentence-transformers>=6.3.0",
+    "umap-learn>=0.6.0",
+]
+
+[tool.marimo.package_management]
+# this is a uv project with no pip in the venv; let marimo install via uv
+manager = "uv"
+
+[tool.marimo.experimental]
+# collaborative editing kept reverting cells when a stale tab reconnected
+rtc_v2 = false
