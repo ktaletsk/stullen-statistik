@@ -42,23 +42,38 @@ with app.setup:
     DATA_URL = "https://raw.githubusercontent.com/ktaletsk/stullen-statistik/main/dataset/"
     IN_BROWSER = sys.platform == "emscripten"
 
-    # Dark-surface palette steps (the site is dark by default; light mode is patched in CSS)
+    # Charts must read equally well on a light page and a dark one (this post, the editor,
+    # molab in either theme). So no text, axis or grid colour is set anywhere: marimo hands
+    # Vega its light or dark theme to match the page, and Vega supplies the ink. Data colours
+    # are mid-tone steps with at least 3:1 contrast against both white and near-black, and
+    # shading uses opacity of one hue, so "low" fades into whichever background is there.
     BLUE, ORANGE, AQUA, YELLOW, MAGENTA = "#3987e5", "#d95926", "#199e70", "#c98500", "#d55181"
-    GREEN, VIOLET, RED, GRAY = "#0ca30c", "#9085e9", "#e66767", "#6b6a65"
-    DIVERGING = ["#9ec5f4", "#3987e5", "#184f95", "#383835", "#a32222", "#e34948", "#f2a8a8"]
+    GREEN, VIOLET, RED, GRAY = "#0ca30c", "#9085e9", "#e34948", "#8a8984"
     KIND_COLORS = {"spread": BLUE, "savory": ORANGE, "veg": AQUA, "junk": YELLOW, "sweet": MAGENTA}
-    INK, MUTED, RULE = "#e5e4df", "#a9a8a2", "#2e2e2c"
 
-    @alt.theme.register("stullen_dark", enable=True)
+    def with_values(bars, data, field, labels):
+        """Print each bar's value in a column on the right, as a second category axis.
+
+        Text marks can't follow the light/dark theme (Vega-Lite bakes their colour in), but
+        axis labels can; so every piece of text in these charts is a title, axis or legend.
+        """
+        values = alt.Chart(data).mark_tick(opacity=0).encode(
+            y=alt.Y(field, sort=list(labels), title=None, axis=alt.Axis(
+                orient="right", domain=False, ticks=False, labelPadding=6,
+                labelExpr=f"{json.dumps(labels, ensure_ascii=False)}[datum.value]",
+            ))
+        )
+        return alt.layer(bars, values).resolve_axis(y="independent")
+
+    @alt.theme.register("stullen_any_mode", enable=True)
     def _theme():
         return alt.theme.ThemeConfig(
             {
                 "config": {
                     "background": "transparent",
-                    "axis": {"labelFontSize": 12, "titleFontSize": 12, "labelColor": MUTED, "titleColor": MUTED, "titleFontWeight": "normal", "gridColor": RULE, "domainColor": "#4a4a47", "tickColor": "#4a4a47"},
-                    "legend": {"labelFontSize": 12, "titleFontSize": 12, "labelColor": MUTED, "titleColor": MUTED},
-                    "title": {"fontSize": 15, "color": INK, "subtitleFontSize": 12, "subtitleColor": MUTED, "anchor": "start", "offset": 12},
-                    "text": {"fontSize": 12, "color": MUTED},
+                    "axis": {"labelFontSize": 12, "titleFontSize": 12, "titleFontWeight": "normal", "gridOpacity": 0.5},
+                    "legend": {"labelFontSize": 12, "titleFontSize": 12, "titleFontWeight": "normal"},
+                    "title": {"fontSize": 15, "subtitleFontSize": 12, "anchor": "start", "offset": 12},
                     "view": {"stroke": None},
                 }
             }
@@ -142,13 +157,13 @@ def _(catalog):
 @app.cell
 def _(df, meta):
     # island: kpis
-    # plain HTML tiles (mo.stat renders in a shadow root the blog's dark styles can't reach)
+    # plain HTML tiles that take the page's own text colour, so they work in light and dark
     def _tile(label, value, note):
         return (
-            '<div style="flex:1 1 140px;border:1px solid #333;border-radius:10px;padding:12px 14px;background:#1b1b1b">'
-            f'<div style="font-size:13px;color:#a9a8a2">{label}</div>'
-            f'<div style="font-size:26px;font-weight:600;color:#f0efec;line-height:1.3">{value}</div>'
-            f'<div style="font-size:12px;color:#a9a8a2">{note}</div></div>'
+            '<div style="flex:1 1 140px;border:1px solid color-mix(in srgb, currentColor 22%, transparent);border-radius:10px;padding:12px 14px">'
+            f'<div style="font-size:13px;opacity:.72">{label}</div>'
+            f'<div style="font-size:26px;font-weight:600;line-height:1.3">{value}</div>'
+            f'<div style="font-size:12px;opacity:.72">{note}</div></div>'
         )
 
     _tiles = "".join(
@@ -192,9 +207,9 @@ def _(KIND_LABELS, KIND_OF, df, kind_scale, lab):
         x=alt.X("share:Q", axis=None),
         tooltip=[alt.Tooltip("ingredient:N", title="Ingredient"), alt.Tooltip("share:Q", format=".1%", title="% of Stullen"), alt.Tooltip("sandwiches:Q", format=",.0f", title="Stullen")],
     )
-    (
-        _base.mark_bar(cornerRadiusEnd=4, height=14).encode(color=alt.Color("group:N", scale=kind_scale, title=None, legend=alt.Legend(orient="top", columns=2, labelLimit=400)))
-        + _base.mark_text(align="left", dx=4).encode(text=alt.Text("share:Q", format=".0%"))
+    with_values(
+        _base.mark_bar(cornerRadiusEnd=4, height=14).encode(color=alt.Color("group:N", scale=kind_scale, title=None, legend=alt.Legend(orient="top", columns=2, labelLimit=400))),
+        _pop, "ingredient:N", {r["ingredient"]: f"{r['share']:.0%}" for r in _pop.iter_rows(named=True)},
     ).properties(width="container", height=alt.Step(18), title=ttl(f"{_lead['ingredient']} is on {_lead['share']:.0%} of all Stullen", f"% of {_n:,} sandwiches using each ingredient; colour = group"))
     return
 
@@ -226,24 +241,26 @@ def _(KIND_LABELS, KIND_OF, df, kind_scale, lab):
     _lift = np.divide(_co, _exp, out=np.ones_like(_co), where=_exp > 0)
     _names = [lab(k) for k in _keys]
     _rows = [
-        {"a": _names[i], "b": _names[j], "n": int(_co[i, j]), "lift": float(_lift[i, j]), "l2": float(np.log2(max(_lift[i, j], 1 / 16)))}
+        {"a": _names[i], "b": _names[j], "n": int(_co[i, j]), "lift": float(_lift[i, j]), "l2": float(np.log2(max(_lift[i, j], 1 / 16))),
+         "dir": "together" if _lift[i, j] >= 1 else "apart", "strength": float(min(abs(np.log2(max(_lift[i, j], 1 / 16))), 2))}
         for i in range(len(_keys)) for j in range(len(_keys)) if i != j
     ]
     _long = pl.DataFrame(_rows)
     _top = _long.filter(pl.col("a") < pl.col("b"), pl.col("n") >= 30).sort("lift", descending=True).row(0, named=True)
     _heat = (
-        alt.Chart(_long).mark_rect(stroke="#121212", strokeWidth=1)
+        alt.Chart(_long).mark_rect()
         .encode(
-            x=alt.X("a:N", sort=_names, title=None, axis=alt.Axis(labelAngle=-50)),
-            y=alt.Y("b:N", sort=_names, title=None),
-            color=alt.Color("l2:Q", title="log₂ lift", scale=alt.Scale(domain=[-2, 2], range=DIVERGING, clamp=True, interpolate="lab"), legend=alt.Legend(orient="bottom", direction="horizontal", gradientLength=220)),
+            x=alt.X("a:N", sort=_names, title=None, axis=alt.Axis(labelAngle=-50), scale=alt.Scale(paddingInner=0.08)),
+            y=alt.Y("b:N", sort=_names, title=None, scale=alt.Scale(paddingInner=0.08)),
+            color=alt.Color("dir:N", title=None, scale=alt.Scale(domain=["together", "apart"], range=[RED, BLUE]), legend=alt.Legend(orient="bottom", direction="horizontal")),
+            opacity=alt.Opacity("strength:Q", title="× or ÷ chance", scale=alt.Scale(domain=[0, 1], range=[0.05, 1], clamp=True), legend=alt.Legend(orient="bottom", direction="horizontal", values=[0.25, 0.5, 1], labelExpr="format(pow(2, datum.value), '.1f') + '×'", symbolFillColor=GRAY, symbolType="square")),
             tooltip=[alt.Tooltip("a:N", title="Ingredient"), alt.Tooltip("b:N", title="with"), alt.Tooltip("n:Q", format=",.0f", title="Stullen with both"), alt.Tooltip("lift:Q", format=".2f", title="× chance")],
         )
         .properties(width=alt.Step(17), height=alt.Step(17))
     )
     _strip = (
         alt.Chart(pl.DataFrame({"b": _names, "group": [KIND_LABELS[KIND_OF[k]] for k in _keys]})).mark_rect()
-        .encode(y=alt.Y("b:N", sort=_names, axis=None), color=alt.Color("group:N", scale=kind_scale, legend=None), tooltip=["b:N", "group:N"])
+        .encode(y=alt.Y("b:N", sort=_names, axis=None, scale=alt.Scale(paddingInner=0.08)), color=alt.Color("group:N", scale=kind_scale, legend=None), tooltip=["b:N", "group:N"])
         .properties(width=8, height=alt.Step(17))
     )
     # key for the strip, under the matrix so long group names never clip
@@ -254,7 +271,8 @@ def _(KIND_LABELS, KIND_OF, df, kind_scale, lab):
     )
     alt.vconcat(alt.hconcat(_heat, _strip, spacing=3).resolve_scale(color="independent"), _key, spacing=14, title=ttl(
         f"Strongest pair: {_top['a']} + {_top['b']}, {_top['lift']:.1f}× chance",
-        "Red: together more often than chance, blue: less often. Chance accounts for how many ingredients a Stulle has.",
+        "Red: together more often than chance, blue: less often; the stronger, the more solid.",
+        "Chance accounts for how many ingredients a Stulle has.",
         "The strip on the right marks each ingredient's group.",
     )).resolve_scale(color="independent")
     return
@@ -286,7 +304,7 @@ def _(df):
     _edges = np.unique(np.round(np.geomspace(max(_v.min(), 0.05), _v.max() * 1.01, 40), 3))
     _h, _ = np.histogram(_v, bins=_edges)
     _q = np.quantile(_v, [0.5, 0.99])
-    alt.Chart(pl.DataFrame({"lo": _edges[:-1], "hi": _edges[1:], "n": _h})).mark_bar(color=BLUE, stroke="#121212", strokeWidth=1).encode(
+    alt.Chart(pl.DataFrame({"lo": _edges[:-1], "hi": _edges[1:], "n": _h})).mark_bar(color=BLUE, binSpacing=1).encode(
         x=alt.X("lo:Q", bin="binned", scale=alt.Scale(type="log"), title="Estimated height of the topping pile, cm (log scale)"),
         x2="hi:Q",
         y=alt.Y("n:Q", title="Stullen", axis=alt.Axis(format=",.0f")),
@@ -328,13 +346,17 @@ def _(positions, where_topping):
     _g = positions.filter(pl.col("type") == where_topping.value)
     _n = int(_g["pieces"].sum())
     _centre = _g.filter(pl.col("x_cm") ** 2 + pl.col("y_cm") ** 2 < 2.75**2)["pieces"].sum() / max(_n, 1)
-    _heat = alt.Chart(_g).mark_rect(width=11, height=11).encode(
-        x=alt.X("x_cm:Q", scale=alt.Scale(domain=[-6.6, 6.6]), title="cm from centre", axis=alt.Axis(grid=False)),
-        y=alt.Y("y_cm:Q", scale=alt.Scale(domain=[-6.6, 6.6]), title="cm from centre", axis=alt.Axis(grid=False)),
-        color=alt.Color("pieces:Q", scale=alt.Scale(range=["#1d2d44", "#256abf", "#6da7ec", "#cde2fb"], type="sqrt"), title="Pieces"),  # dim to bright on the dark page
+    _half = 13.2 / 40 / 2  # the pipeline's grid: 40 bins over ±6.6 cm
+    _heat = alt.Chart(_g.with_columns((pl.col("x_cm") - _half).alias("x0"), (pl.col("x_cm") + _half).alias("x1"), (pl.col("y_cm") - _half).alias("y0"), (pl.col("y_cm") + _half).alias("y1"))).mark_rect().encode(
+        x=alt.X("x0:Q", scale=alt.Scale(domain=[-6.6, 6.6]), title="cm from centre", axis=alt.Axis(grid=False)),
+        x2="x1:Q",
+        y=alt.Y("y0:Q", scale=alt.Scale(domain=[-6.6, 6.6]), title="cm from centre", axis=alt.Axis(grid=False)),
+        y2="y1:Q",
+        color=alt.value(BLUE),
+        opacity=alt.Opacity("pieces:Q", scale=alt.Scale(type="sqrt", range=[0.08, 1]), title="Pieces", legend=alt.Legend(symbolFillColor=BLUE, symbolType="square")),
         tooltip=[alt.Tooltip("x_cm:Q", format=".1f", title="x cm"), alt.Tooltip("y_cm:Q", format=".1f", title="y cm"), alt.Tooltip("pieces:Q", format=",.0f")],
     )
-    _bread = alt.Chart(pl.DataFrame({"x": [-5.5], "y": [-5.5], "x2": [5.5], "y2": [5.5]})).mark_rect(fill=None, stroke=MUTED, strokeDash=[4, 3]).encode(x="x:Q", y="y:Q", x2="x2:Q", y2="y2:Q")
+    _bread = alt.Chart(pl.DataFrame({"x": [-5.5], "y": [-5.5], "x2": [5.5], "y2": [5.5]})).mark_rect(fill=None, stroke=GRAY, strokeDash=[4, 3]).encode(x="x:Q", y="y:Q", x2="x2:Q", y2="y2:Q")
     (_heat + _bread).properties(width=380, height=380, title=ttl(
         f"{where_topping.selected_key}: {_centre:.0%} of pieces land within 2.75 cm of the centre",
         f"{_n:,} pieces; dashed square = the 11 cm slice. A uniform spread would put 20% there.",
@@ -355,18 +377,17 @@ def _(df):
     )
     _peak = _hourly.sort("n").row(-1, named=True)
     _hn = pl.DataFrame({"t": ["2026-11-22T01:07:59"], "label": ["Posted to Hacker News"]}).with_columns(pl.col("t").str.to_datetime())
-    _rule = alt.Chart(_hn).mark_rule(color=MUTED, strokeDash=[4, 3]).encode(x="t:T")
-    _rule_t = alt.Chart(_hn).mark_text(align="left", dx=4, baseline="top", color=MUTED).encode(x="t:T", y=alt.value(4), text="label")
+    _rule = alt.Chart(_hn).mark_rule(color=GRAY, strokeDash=[4, 3]).encode(x="t:T")
     _per_hour = (
-        alt.Chart(_hourly).mark_area(color=BLUE, opacity=0.3, line={"color": BLUE, "strokeWidth": 2}).encode(
+        alt.Chart(_hourly).mark_area(color=BLUE, fillOpacity=0.3, line={"color": BLUE, "strokeWidth": 2}).encode(
             x=alt.X("created_berlin:T", title=None),
             y=alt.Y("n:Q", title="Stullen per hour", axis=alt.Axis(format=",.0f")),
             tooltip=[alt.Tooltip("created_berlin:T", format="%a %d %b %H:00", title="Hour (Berlin)"), alt.Tooltip("n:Q", format=",.0f", title="Stullen")],
         )
-        + _rule + _rule_t
+        + _rule
     ).properties(width="container", height=220, title=ttl(
         f"Peak: {_peak['n']:,} Stullen in one hour, {_peak['created_berlin']:%a %d %b %H:00}",
-        "Sandwiches made per hour (still on the site), Berlin time",
+        "Sandwiches made per hour (still on the site), Berlin time. Dashed line: posted to Hacker News.",
     ))
     _total = (
         alt.Chart(_cum).mark_line(color=BLUE, strokeWidth=2).encode(
@@ -374,10 +395,10 @@ def _(df):
             y=alt.Y("total:Q", title="Made so far", axis=alt.Axis(format=",.0f")),
             tooltip=[alt.Tooltip("t:T", format="%a %d %b %H:%M", title="Berlin time"), alt.Tooltip("total:Q", format=",.0f", title="Running total")],
         )
-        + _rule + _rule_t
+        + _rule
     ).properties(width="container", height=220, title=ttl(
         f"{_cum['total'][-1]:,} Stullen made by {_cum['t'][-1]:%a %d %b}",
-        "Running total (the serial ID at creation time, so it also counts deleted ones), Berlin time",
+        "Running total (the serial ID at creation time, so it also counts deleted ones), Berlin time. Dashed line: posted to Hacker News.",
     ))
     mo.ui.tabs({"Per hour": _per_hour, "Running total": _total})
     return
@@ -399,9 +420,9 @@ def _(KIND_OF, df):
     _sh = dict(zip(_p["profile"], _p["share"]))
     _order = ["Savory", "Sweet", "Chaos (sweet + savory)", "Plain (butter/quark only)"]
     _b = alt.Chart(_p).encode(y=alt.Y("profile:N", sort=_order, title=None), x=alt.X("share:Q", axis=None), tooltip=["profile", alt.Tooltip("n:Q", format=",.0f"), alt.Tooltip("share:Q", format=".1%")])
-    (
-        _b.mark_bar(cornerRadiusEnd=4, height=18).encode(color=alt.condition(alt.datum.profile == "Chaos (sweet + savory)", alt.value(MAGENTA), alt.value(GRAY)))
-        + _b.mark_text(align="left", dx=4).encode(text=alt.Text("share:Q", format=".0%"))
+    with_values(
+        _b.mark_bar(cornerRadiusEnd=4, height=18).encode(color=alt.condition(alt.datum.profile == "Chaos (sweet + savory)", alt.value(MAGENTA), alt.value(GRAY))),
+        _p, "profile:N", {o: f"{_sh.get(o, 0):.0%}" for o in _order},
     ).properties(width="container", height=alt.Step(26), title=ttl(
         f"{_sh.get('Chaos (sweet + savory)', 0):.0%} of Stullen mix sweet and savory",
         "Sweet = jam, Nutella, fruit or gummy bears; savory = everything else except plain butter or quark",
@@ -429,7 +450,7 @@ def _(clip_map, hunt, hunt_hits):
 def _(catalog, clip_map):
     # island: map
     _cats = catalog["taxonomy"]
-    _palette = ["#4a4a47", BLUE, "#8a8984", ORANGE, YELLOW, AQUA, VIOLET, MAGENTA, GREEN, RED]
+    _palette = [GRAY, BLUE, "#6b6a65", ORANGE, YELLOW, AQUA, VIOLET, MAGENTA, GREEN, RED]
     # rounded positions keep the pre-rendered island (all points inline) small
     _m = clip_map.drop_nulls("x").select("id", pl.col("x", "y").round(2), "category")
     map_chart = mo.ui.altair_chart(
