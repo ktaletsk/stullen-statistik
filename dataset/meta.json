@@ -1,11 +1,11 @@
 {
- "updated_at": "2026-11-23T22:00:24Z",
+ "updated_at": "2026-11-23T22:25:44Z",
  "source": "https://stulle.app/api/photos/{id}",
  "photos": "https://img.stulle.app/{id}/thumb.jpg",
- "max_id_checked": 51380,
- "sandwiches": 49826,
- "deleted": 1481,
- "blank_photos": 73,
+ "max_id_checked": 51582,
+ "sandwiches": 50024,
+ "deleted": 1482,
+ "blank_photos": 76,
  "part_size": 2000,
  "parts": [
   "part-00000",
