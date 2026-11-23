@@ -19,3 +19,5 @@ __marimo__/*
 
 # only the main notebook needs a committed session (molab preview)
 blog/__marimo__/
+
+.claude/

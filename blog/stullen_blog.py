@@ -5,6 +5,8 @@
 #     "marimo>=0.25.2",
 #     "numpy>=2.2.0",
 #     "polars>=1.33.0",
+#     "pyarrow>=22.0.0",
+#     "tzdata>=2025.2",
 # ]
 # ///
 """The interactive pieces of the blog post, as marimo islands.
@@ -32,6 +34,10 @@ with app.setup:
     import marimo as mo
     import numpy as np
     import polars as pl
+    # Imported only so that marimo loads them into Pyodide: polars reads parquet through
+    # pyarrow in WebAssembly, and needs the tzdata package for Europe/Berlin.
+    import pyarrow  # noqa: F401
+    import tzdata  # noqa: F401
 
     DATA_URL = "https://raw.githubusercontent.com/ktaletsk/stullen-statistik/main/dataset/"
     IN_BROWSER = sys.platform == "emscripten"
@@ -136,18 +142,26 @@ def _(catalog):
 @app.cell
 def _(df, meta):
     # island: kpis
-    _tile = lambda label, value, note: mo.stat(value=value, label=label, caption=note, bordered=True)
+    # plain HTML tiles (mo.stat renders in a shadow root the blog's dark styles can't reach)
+    def _tile(label, value, note):
+        return (
+            '<div style="flex:1 1 140px;border:1px solid #333;border-radius:10px;padding:12px 14px;background:#1b1b1b">'
+            f'<div style="font-size:13px;color:#a9a8a2">{label}</div>'
+            f'<div style="font-size:26px;font-weight:600;color:#f0efec;line-height:1.3">{value}</div>'
+            f'<div style="font-size:12px;color:#a9a8a2">{note}</div></div>'
+        )
+
+    _tiles = "".join(
+        [
+            _tile("Stullen", f"{df.height:,}", "still on the site"),
+            _tile("Median toppings", f"{df['n_toppings'].median():.0f}", "pieces per sandwich"),
+            _tile("Bare bread", f"{(df['n_toppings'] == 0).mean():.0%}", "no toppings at all"),
+            _tile("Remixes", f"{df['parent_id'].is_not_null().mean():.0%}", "built on someone else's"),
+        ]
+    )
     mo.vstack(
         [
-            mo.hstack(
-                [
-                    _tile("Stullen", f"{df.height:,}", "still on the site"),
-                    _tile("Median toppings", f"{df['n_toppings'].median():.0f}", "pieces per sandwich"),
-                    _tile("Bare bread", f"{(df['n_toppings'] == 0).mean():.0%}", "no toppings at all"),
-                    _tile("Remixes", f"{df['parent_id'].is_not_null().mean():.0%}", "built on someone else's"),
-                ],
-                widths="equal",
-            ),
+            mo.Html(f'<div style="display:flex;flex-wrap:wrap;gap:10px">{_tiles}</div>'),
             mo.md(
                 f"<small>Live data, updated {meta['updated_at'][:10]}: {meta['deleted']:,} deleted and "
                 f"{meta['blank_photos']:,} banned sandwiches left out.</small>"
@@ -229,12 +243,19 @@ def _(KIND_LABELS, KIND_OF, df, kind_scale, lab):
     )
     _strip = (
         alt.Chart(pl.DataFrame({"b": _names, "group": [KIND_LABELS[KIND_OF[k]] for k in _keys]})).mark_rect()
-        .encode(y=alt.Y("b:N", sort=_names, axis=None), color=alt.Color("group:N", scale=kind_scale, legend=alt.Legend(orient="bottom", title=None, columns=2, labelLimit=400)), tooltip=["b:N", "group:N"])
+        .encode(y=alt.Y("b:N", sort=_names, axis=None), color=alt.Color("group:N", scale=kind_scale, legend=None), tooltip=["b:N", "group:N"])
         .properties(width=8, height=alt.Step(17))
     )
-    alt.hconcat(_heat, _strip, spacing=3, title=ttl(
+    # key for the strip, under the matrix so long group names never clip
+    _key = (
+        alt.Chart(pl.DataFrame({"group": list(kind_scale.domain)})).mark_square(size=120, opacity=1)
+        .encode(y=alt.Y("group:N", sort=list(kind_scale.domain), title=None, axis=alt.Axis(orient="right", domain=False, ticks=False, labelLimit=500)), color=alt.Color("group:N", scale=kind_scale, legend=None))
+        .properties(width=12, height=alt.Step(17))
+    )
+    alt.vconcat(alt.hconcat(_heat, _strip, spacing=3).resolve_scale(color="independent"), _key, spacing=14, title=ttl(
         f"Strongest pair: {_top['a']} + {_top['b']}, {_top['lift']:.1f}× chance",
         "Red: together more often than chance, blue: less often. Chance accounts for how many ingredients a Stulle has.",
+        "The strip on the right marks each ingredient's group.",
     )).resolve_scale(color="independent")
     return
 
@@ -296,7 +317,7 @@ def _(df, lab):
 def _(lab, positions):
     # island: where_pick
     _types = positions.group_by("type").agg(pl.col("pieces").sum()).sort("pieces", descending=True)["type"].to_list()
-    where_topping = mo.ui.dropdown(options={lab(t): t for t in _types}, value=lab("gummibaer") if "gummibaer" in _types else lab(_types[0]), label="Topping")
+    where_topping = mo.ui.dropdown(options={lab(t): t for t in _types}, value=lab("gummibaer") if "gummibaer" in _types else lab(_types[0]))
     where_topping
     return (where_topping,)
 
@@ -391,7 +412,7 @@ def _(KIND_OF, df):
 @app.cell
 def _(catalog):
     # island: hunt_pick
-    hunt = mo.ui.dropdown(options=catalog["hunts"], value="☭ Hammer and sickle", label="Hunt for")
+    hunt = mo.ui.dropdown(options=catalog["hunts"], value="☭ Hammer and sickle")  # no label: it renders dark-on-dark in the blog
     hunt
     return (hunt,)
 

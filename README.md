@@ -34,15 +34,21 @@ IDs. A daily update only rewrites the newest one or two, so the repository grows
 Deleted and banned sandwiches are left out of everything else. Photos are not copied: they
 stay at `img.stulle.app/{id}/thumb.jpg`, so anything removed there disappears here too.
 
-Read it from anywhere with fsspec (this is what the notebook does on molab):
+Read it from anywhere with fsspec, as the notebook does on molab:
 
 ```python
+import json
 import fsspec, polars as pl
 
-fs = fsspec.filesystem("github", org="ktaletsk", repo="stullen-statistik", sha="main")
-with fs.open("dataset/stullen/part-00000.parquet") as f:
-    df = pl.read_parquet(f)
+base = "https://raw.githubusercontent.com/ktaletsk/stullen-statistik/main/dataset/"
+fs = fsspec.filesystem("https")  # needs aiohttp
+meta = json.loads(fs.cat(base + "meta.json"))
+files = fs.cat([f"{base}stullen/{p}.parquet" for p in meta["parts"]])  # fetched concurrently
+stullen = pl.concat(pl.read_parquet(b) for b in files.values())
 ```
+
+(`github://` works too, but it goes through the GitHub API, which allows 60 unauthenticated
+requests an hour, and the full dataset is ~130 files.)
 
 ## Pipeline
 

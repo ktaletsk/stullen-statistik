@@ -2,6 +2,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "altair>=6.3.0",
+#     "aiohttp>=3.11.0",
 #     "fsspec>=2025.3.0",
 #     "ipython>=9.18.1",
 #     "marimo>=0.25.2",
@@ -9,7 +10,6 @@
 #     "pillow>=13.0.0",
 #     "polars>=2.1.0",
 #     "pyarrow>=26.0.1",
-#     "requests>=2.32.3",
 #     "scipy>=1.18.1",
 #     "sentence-transformers>=6.3.0",
 # ]
@@ -44,10 +44,15 @@ with app.setup:
     # Where the data comes from: dataset/ next to this notebook when it is there (a clone of
     # the repo, refreshed daily by GitHub Actions); otherwise the same files straight from
     # GitHub: fsspec on a server (molab, `uvx marimo edit <url>`), fetch() in the browser (WASM).
-    GITHUB = {"org": "ktaletsk", "repo": "stullen-statistik", "sha": "main"}
+    # fsspec reads raw.githubusercontent.com over HTTPS rather than through `github://`, which
+    # goes via the GitHub API and is capped at 60 unauthenticated requests an hour.
     REPO_URL = "https://github.com/ktaletsk/stullen-statistik"
     RAW_URL = "https://raw.githubusercontent.com/ktaletsk/stullen-statistik/main/"
     IN_BROWSER = sys.platform == "emscripten"
+    if IN_BROWSER:
+        # loaded into Pyodide for polars: parquet goes through pyarrow, time zones need tzdata
+        import pyarrow  # noqa: F401
+        import tzdata  # noqa: F401
 
 
     def _find_local_dataset():
@@ -81,10 +86,10 @@ with app.setup:
             return list(await asyncio.gather(*(_one(_p) for _p in paths)))
         import fsspec
 
-        _fs = fsspec.filesystem("github", **GITHUB)
-        _full = [f"dataset/{_p}" for _p in paths]
-        _got = _fs.cat(_full)
-        return [_got[_f] for _f in _full]
+        _fs = fsspec.filesystem("https")
+        _urls = [f"{RAW_URL}dataset/{_p}" for _p in paths]
+        _got = _fs.cat(_urls)  # fetched concurrently
+        return [_got[_u] for _u in _urls]
 
     alt.data_transformers.disable_max_rows()
 
