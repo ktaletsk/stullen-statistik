@@ -272,18 +272,31 @@ def _(stullen):
 @app.cell(hide_code=True)
 def _(df, meta, n_blank, n_missing, sample_rate, sampling_note):
     _max_id = int(df["id"].max())
-    _seen = round(sample_rate * _max_id)
     _remixed = df["parent_id"].is_not_null().mean()
 
     def _tile(label, value, note=""):
         return mo.stat(value=value, label=label, caption=note, bordered=True)
 
+    from datetime import datetime as _dt
+
+    _updated = _dt.fromisoformat(meta["updated_at"].replace("Z", "+00:00")).strftime("%-d %b %Y, %H:%M UTC")
+    # One short line under the tiles; the fine print folds away
+    _short = f"Data updated {_updated} · {n_missing + n_blank:,} deleted or banned Stullen left out"
+    if sample_rate < 0.99:
+        _short += f" · based on {sample_rate:.0%} of IDs so far"
+    _details = f"""
+    * **Source:** every sandwich's JSON from `stulle.app/api/photos/{{id}}`, collected daily by
+      [GitHub Actions]({REPO_URL}/actions) into {DATA_SOURCE}.
+    * **Coverage:** {sample_rate:.0%} of the ~{_max_id:,} IDs so far. IDs are fetched in even blocks,
+      so a partial scrape is a uniform random sample and percentages are estimates from it. {sampling_note}
+    * **Left out:** {n_missing:,} deleted (the API returns 404) and {n_blank:,} banned, whose photo
+      the moderator replaced with a black square (a few are broken renders).
+    """
     mo.vstack(
         [
-            mo.md(f"**Data:** {DATA_SOURCE}, updated {meta['updated_at'].replace('T', ' ').rstrip('Z')} UTC. **Coverage:** {sample_rate:.0%} of ~{_max_id:,} IDs checked so far; {n_missing:,} were 404 (deleted or reported) and {n_blank:,} more show a blank photo (blacked out by moderation, or a broken render), so they are left out. All percentages are estimates from this uniform random sample." + (" " + sampling_note if sampling_note else "")),
             mo.hstack(
                 [
-                    _tile("Sandwiches", f"{df.height:,}", "in the analysed sample"),
+                    _tile("Sandwiches", f"{df.height:,}", "still on the site" if sample_rate >= 0.99 else "in the sample"),
                     _tile("Median toppings", f"{df['n_toppings'].median():.0f}", "pieces per sandwich"),
                     _tile("Median height", f"{df['height_cm'].median():.1f} cm", "estimated topping pile"),
                     _tile("Bare bread", f"{(df['n_toppings'] == 0).mean():.0%}", "no toppings at all"),
@@ -291,7 +304,10 @@ def _(df, meta, n_blank, n_missing, sample_rate, sampling_note):
                 ],
                 widths="equal",
             ),
-        ]
+            mo.md(f'<span style="font-size:0.85em;opacity:.7">{_short}</span>'),
+            mo.accordion({"About the data": mo.md(_details)}),
+        ],
+        gap=0.5,
     )
     return
 
