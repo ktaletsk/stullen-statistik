@@ -1,11 +1,11 @@
 {
- "updated_at": "2026-11-26T17:51:59Z",
+ "updated_at": "2026-11-27T17:07:25Z",
  "source": "https://stulle.app/api/photos/{id}",
  "photos": "https://img.stulle.app/{id}/thumb.jpg",
- "max_id_checked": 77730,
- "sandwiches": 75508,
- "deleted": 2134,
- "blank_photos": 88,
+ "max_id_checked": 84507,
+ "sandwiches": 82099,
+ "deleted": 2316,
+ "blank_photos": 92,
  "part_size": 2000,
  "parts": [
   "part-00000",
@@ -46,7 +46,11 @@
   "part-00035",
   "part-00036",
   "part-00037",
-  "part-00038"
+  "part-00038",
+  "part-00039",
+  "part-00040",
+  "part-00041",
+  "part-00042"
  ],
  "clip_model": "clip-ViT-L-14"
 }
